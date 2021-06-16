@@ -10,7 +10,7 @@ import (
 // See https://binance-docs.github.io/apidocs/spot/en/#withdraw
 type CreateWithdrawService struct {
 	c                  *Client
-	asset              string
+	coin              string
 	withdrawOrderID    *string
 	network            *string
 	address            string
@@ -21,8 +21,8 @@ type CreateWithdrawService struct {
 }
 
 // Asset sets the asset parameter (MANDATORY).
-func (s *CreateWithdrawService) Asset(v string) *CreateWithdrawService {
-	s.asset = v
+func (s *CreateWithdrawService) Coin(v string) *CreateWithdrawService {
+	s.coin = v
 	return s
 }
 
@@ -72,10 +72,10 @@ func (s *CreateWithdrawService) Name(v string) *CreateWithdrawService {
 func (s *CreateWithdrawService) Do(ctx context.Context) (*CreateWithdrawResponse, error) {
 	r := &request{
 		method:   "POST",
-		endpoint: "/wapi/v3/withdraw.html",
+		endpoint: "/sapi/v1/capital/withdraw/apply",
 		secType:  secTypeSigned,
 	}
-	r.setParam("asset", s.asset)
+	r.setParam("coin", s.coin)
 	r.setParam("address", s.address)
 	r.setParam("amount", s.amount)
 	if v := s.withdrawOrderID; v != nil {
@@ -119,15 +119,17 @@ type CreateWithdrawResponse struct {
 // See https://binance-docs.github.io/apidocs/spot/en/#withdraw-history-supporting-network-user_data
 type ListWithdrawsService struct {
 	c         *Client
-	asset     *string
+	coin     *string
 	status    *int
 	startTime *int64
 	endTime   *int64
+	offset *int64
+	limit *int64
 }
 
 // Asset sets the asset parameter.
-func (s *ListWithdrawsService) Asset(asset string) *ListWithdrawsService {
-	s.asset = &asset
+func (s *ListWithdrawsService) Coin(coin string) *ListWithdrawsService {
+	s.coin = &coin
 	return s
 }
 
@@ -151,15 +153,25 @@ func (s *ListWithdrawsService) EndTime(endTime int64) *ListWithdrawsService {
 	return s
 }
 
+func (s *ListWithdrawsService) Offset(offset int64) *ListWithdrawsService {
+	s.offset = &offset
+	return s
+}
+
+func (s *ListWithdrawsService) Limit(limit int64) *ListWithdrawsService {
+	s.limit = &limit
+	return s
+}
+
 // Do sends the request.
 func (s *ListWithdrawsService) Do(ctx context.Context) (withdraws []*Withdraw, err error) {
 	r := &request{
 		method:   "GET",
-		endpoint: "/wapi/v3/withdrawHistory.html",
+		endpoint: "/sapi/v1/capital/withdraw/history",
 		secType:  secTypeSigned,
 	}
-	if s.asset != nil {
-		r.setParam("asset", *s.asset)
+	if s.coin != nil {
+		r.setParam("asset", *s.coin)
 	}
 	if s.status != nil {
 		r.setParam("status", *s.status)
@@ -169,6 +181,12 @@ func (s *ListWithdrawsService) Do(ctx context.Context) (withdraws []*Withdraw, e
 	}
 	if s.endTime != nil {
 		r.setParam("endTime", *s.endTime)
+	}
+	if s.limit != nil {
+		r.setParam("limit", *s.limit)
+	}
+	if s.offset != nil {
+		r.setParam("offset", *s.offset)
 	}
 	data, err := s.c.callAPI(ctx, r)
 	if err != nil {

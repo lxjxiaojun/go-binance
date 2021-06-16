@@ -10,15 +10,17 @@ import (
 // See https://binance-docs.github.io/apidocs/spot/en/#deposit-history-user_data
 type ListDepositsService struct {
 	c         *Client
-	asset     *string
+	coin     *string
 	status    *int
 	startTime *int64
 	endTime   *int64
+	offset *int64
+	limit *int64
 }
 
 // Asset sets the asset parameter.
-func (s *ListDepositsService) Asset(asset string) *ListDepositsService {
-	s.asset = &asset
+func (s *ListDepositsService) Coin(coin string) *ListDepositsService {
+	s.coin = &coin
 	return s
 }
 
@@ -42,15 +44,25 @@ func (s *ListDepositsService) EndTime(endTime int64) *ListDepositsService {
 	return s
 }
 
+func (s *ListDepositsService) Offset(offset int64) *ListDepositsService {
+	s.offset = &offset
+	return s
+}
+
+func (s *ListDepositsService) Limit(limit int64) *ListDepositsService {
+	s.limit = &limit
+	return s
+}
+
 // Do sends the request.
 func (s *ListDepositsService) Do(ctx context.Context) (deposits []*Deposit, err error) {
 	r := &request{
 		method:   "GET",
-		endpoint: "/wapi/v3/depositHistory.html",
+		endpoint: "/sapi/v1/capital/deposit/hisrec",
 		secType:  secTypeSigned,
 	}
-	if s.asset != nil {
-		r.setParam("asset", *s.asset)
+	if s.coin != nil {
+		r.setParam("asset", *s.coin)
 	}
 	if s.status != nil {
 		r.setParam("status", *s.status)
@@ -60,6 +72,12 @@ func (s *ListDepositsService) Do(ctx context.Context) (deposits []*Deposit, err 
 	}
 	if s.endTime != nil {
 		r.setParam("endTime", *s.endTime)
+	}
+	if s.limit != nil {
+		r.setParam("limit", *s.limit)
+	}
+	if s.offset != nil {
+		r.setParam("offset", *s.offset)
 	}
 
 	data, err := s.c.callAPI(ctx, r)
@@ -96,19 +114,12 @@ type Deposit struct {
 // See https://binance-docs.github.io/apidocs/spot/en/#deposit-address-supporting-network-user_data
 type GetDepositsAddressService struct {
 	c      *Client
-	asset  string
-	status *bool
+	coin  string
 }
 
 // Asset sets the asset parameter (MANDATORY).
-func (s *GetDepositsAddressService) Asset(v string) *GetDepositsAddressService {
-	s.asset = v
-	return s
-}
-
-// Status sets the status parameter.
-func (s *GetDepositsAddressService) Status(v bool) *GetDepositsAddressService {
-	s.status = &v
+func (s *GetDepositsAddressService) Coin(v string) *GetDepositsAddressService {
+	s.coin = v
 	return s
 }
 
@@ -116,13 +127,10 @@ func (s *GetDepositsAddressService) Status(v bool) *GetDepositsAddressService {
 func (s *GetDepositsAddressService) Do(ctx context.Context) (*GetDepositAddressResponse, error) {
 	r := &request{
 		method:   "GET",
-		endpoint: "/wapi/v3/depositAddress.html",
+		endpoint: "/sapi/v1/capital/deposit/address",
 		secType:  secTypeSigned,
 	}
-	r.setParam("asset", s.asset)
-	if v := s.status; v != nil {
-		r.setParam("status", *v)
-	}
+	r.setParam("asset", s.coin)
 
 	data, err := s.c.callAPI(ctx, r)
 	if err != nil {
